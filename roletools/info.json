@@ -1,6 +1,7 @@
 {
     "author": [
-        "TrustyJAID"
+        "TrustyJAID",
+        "AdiGro"
     ],
     "description": "Various role utility commands. Including Reaction roles, Sticky roles, and Auto role.",
     "disabled": false,
