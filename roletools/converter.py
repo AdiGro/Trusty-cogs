@@ -20,6 +20,49 @@ _id_regex = re.compile(r"([0-9]{15,21})$")
 _mention_regex = re.compile(r"<@!?([0-9]{15,21})>$")
 
 
+class MessageConverter(commands.Converter):
+    async def convert(self, ctx, argument):
+
+        if ctx.message.reference.resolved:
+            return ctx.message.reference.resolved
+
+        argument =argument.strip("<>")
+        if argument.startswith("http"):
+            split = argument.split("/")
+            if len(split) == 7:
+                guild_id, channel_id, message_id = split[4], split[5], split[6]
+                channel = ctx.bot.get_channel(int(channel_id))
+                if not channel:
+                    try:
+                        await ctx.guild.fetch_channel(channel_id)
+                    except discord.NotFound:
+                        raise commands.BadArgument("Channel not found")
+
+            else:
+                raise commands.BadArgument("Invalid message URL")
+
+        else:
+            channel = ctx.channel
+            message_id = argument
+            if not message_id.isdigit():
+                raise commands.BadArgument("Invalid message ID")
+
+        try:
+            message_id = int(argument)
+        except ValueError:
+            raise commands.BadArgument("Invalid message ID")
+
+        try:
+            message = await ctx.channel.fetch_message(message_id)
+        except discord.NotFound:
+            raise commands.BadArgument("Message not found")
+        except discord.Forbidden:
+            raise commands.BadArgument("I do not have permission to fetch that message")
+        except discord.HTTPException:
+            raise commands.BadArgument("An error occurred while fetching the message")
+
+        return message
+
 class RawUserIds(Converter):
     # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/mod/converters.py
     async def convert(self, ctx: commands.Context, argument: str) -> int:
