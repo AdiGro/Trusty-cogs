@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Union
+from typing_extensions import Annotated
 
 import discord
 from red_commons.logging import getLogger
@@ -10,7 +11,7 @@ from redbot.core.i18n import Translator
 
 from .abc import RoleToolsMixin
 from .components import ButtonRole, RoleToolsView, SelectRole
-from .converter import ButtonRoleConverter, SelectRoleConverter
+from .converter import ButtonRoleConverter, SelectRoleConverter, MessageConverter
 
 roletools = RoleToolsMixin.roletools
 
@@ -257,7 +258,7 @@ class RoleToolsMessages(RoleToolsMixin):
         channel: discord.TextChannel,
         buttons: commands.Greedy[ButtonRoleConverter],
         *,
-        message: str,
+        message: Union[Annotated[discord.Message, MessageConverter], str],
     ) -> None:
         """
         Send buttons to a specified channel with optional message.
@@ -282,7 +283,13 @@ class RoleToolsMessages(RoleToolsMixin):
         log.verbose("send_buttons buttons: %s", buttons)
         for button in buttons:
             new_view.add_item(button)
-        msg = await channel.send(content=message, view=new_view)
+        if isinstance(message, discord.Message):
+            content = message.content
+            embeds = message.embeds or [message.embed]
+        else:
+            content = message
+            embeds = []
+        msg = await channel.send(content=content, view=new_view, embeds=embeds)
         message_key = f"{msg.channel.id}-{msg.id}"
 
         await self.save_settings(ctx.guild, message_key, buttons=buttons, select_menus=[])
